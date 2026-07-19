@@ -73,20 +73,27 @@
   .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 
   /* Home page */
-  .hero { padding: 30px 0 10px; }
+  .hero { padding: 30px 0 10px; text-align: center; }
   .hero h1 { font-size: 30px; margin-bottom: 10px; }
-  .hero p { font-size: 15px; color: var(--text-secondary); max-width: 560px; line-height: 1.6; }
+  .hero p { font-size: 15px; color: var(--text-secondary); max-width: 560px; line-height: 1.6; margin-left: auto; margin-right: auto; }
   .example-block { margin-top: 6px; font-size: 13px; color: var(--text-muted); }
-  .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 20px; }
+  .boards-section {
+    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px;
+    padding: 20px; margin-top: 28px;
+  }
+  .boards-section-title { font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 14px; }
+  .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
   .board-card {
-    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px;
-    padding: 16px; cursor: pointer; text-align: left;
+    background: var(--surface-1); border: 0.5px solid var(--border); border-radius: 12px;
+    padding: 18px 16px; cursor: pointer; text-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 84px;
   }
   .board-card:hover { border-color: var(--border-strong); }
   .board-card .bname { font-weight: 500; font-size: 15px; margin-bottom: 4px; }
   .board-card .bmeta { font-size: 12px; color: var(--text-muted); }
   .board-card.new-card {
-    display: flex; align-items: center; justify-content: center; gap: 6px;
+    display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
     color: var(--text-secondary); border-style: dashed;
   }
 
@@ -274,6 +281,8 @@
     ]);
     container.appendChild(hero);
 
+    var section = el('div', { class: 'boards-section' });
+    section.appendChild(el('div', { class: 'boards-section-title' }, [text('Your boards')]));
     var grid = el('div', { class: 'board-grid' });
     Object.keys(state.boards).forEach(function(id) {
       var b = state.boards[id];
@@ -285,7 +294,8 @@
     grid.appendChild(el('button', { class: 'board-card new-card', onclick: function() { goTo('newBoard'); } }, [
       newIcon(), text('New board')
     ]));
-    container.appendChild(grid);
+    section.appendChild(grid);
+    container.appendChild(section);
   }
 
   function newIcon() {
