@@ -117,10 +117,14 @@
     position: fixed; bottom: 20px; left: 20px; z-index: 1000;
     background: var(--surface-2); border: 0.5px solid var(--border);
     border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.16);
-    overflow: hidden; transition: width 0.2s ease, height 0.2s ease;
+    overflow: hidden;
     width: 44px; height: 44px;
+    transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1), height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .nav-widget:hover { width: 210px; height: auto; max-height: 340px; }
+  .nav-widget:hover {
+    width: 210px;
+    height: min(340px, var(--nav-expanded-height, 200px));
+  }
   .nav-toggle {
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; cursor: pointer;
@@ -128,10 +132,11 @@
   .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary); }
   .nav-body {
     display: flex; flex-direction: column;
-    opacity: 0; visibility: hidden; transition: opacity 0.15s ease 0.05s;
-    max-height: 296px; overflow-y: auto;
+    opacity: 0; transition: opacity 0.18s ease;
+    overflow-y: auto;
+    height: calc(100% - 44px);
   }
-  .nav-widget:hover .nav-body { opacity: 1; visibility: visible; }
+  .nav-widget:hover .nav-body { opacity: 1; transition: opacity 0.18s ease 0.14s; }
   .nav-section-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--text-muted); padding: 8px 14px 2px;
@@ -567,6 +572,12 @@
       var isActive = page === 'board' && id === state.activeBoardId;
       navBody.appendChild(el('button', { class: 'nav-item' + (isActive ? ' active' : ''), onclick: function() { goTo('board', id); } }, [text(b.name)]));
     });
+
+    // Measure natural content height so the widget can smoothly animate to a fixed
+    // target instead of animating to/from `auto`, which browsers can't tween.
+    var navWidget = document.getElementById('navWidget');
+    var contentHeight = navBody.scrollHeight; // includes all nav items
+    navWidget.style.setProperty('--nav-expanded-height', (44 + contentHeight) + 'px');
   }
 
   // ---------- Main render ----------
