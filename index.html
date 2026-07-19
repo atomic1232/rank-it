@@ -7,111 +7,141 @@
 </head>
 <body>
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+    --surface-0: #fafafa; --surface-1: #f2f2f2; --surface-2: #ffffff;
+    --text-primary: #111; --text-secondary: #666; --text-muted: #999;
+    --border: #ddd; --border-strong: #999; --accent: #111; --accent-text: #fff;
+  }
+  html[data-theme="dark"] {
+    --surface-0: #16161a; --surface-1: #202024; --surface-2: #232327;
+    --text-primary: #f2f2f2; --text-secondary: #b5b5b8; --text-muted: #7c7c80;
+    --border: #333336; --border-strong: #4a4a4d; --accent: #f2f2f2; --accent-text: #16161a;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: var(--font-sans, system-ui); background: var(--surface-0, #fff); color: var(--text-primary, #111); }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+  body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--surface-0); color: var(--text-primary); transition: background 0.15s ease, color 0.15s ease; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 100px; }
   h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-  .sub { color: var(--text-secondary, #666); font-size: 14px; margin: 0 0 20px; }
+  h2 { font-size: 19px; font-weight: 500; margin: 0 0 6px; }
+  .sub { color: var(--text-secondary); font-size: 14px; margin: 0 0 20px; }
   .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
   select, input, button, textarea { font-family: inherit; font-size: 14px; }
   select, input[type=text], input[type=number] {
-    height: 36px; padding: 0 10px; border-radius: 8px; border: 0.5px solid var(--border, #ccc);
-    background: var(--surface-2, #fff); color: var(--text-primary, #111);
+    height: 36px; padding: 0 10px; border-radius: 8px; border: 0.5px solid var(--border);
+    background: var(--surface-2); color: var(--text-primary);
   }
   button {
-    height: 36px; padding: 0 14px; border-radius: 8px; border: 0.5px solid var(--border-strong, #999);
-    background: transparent; color: var(--text-primary, #111); cursor: pointer;
+    height: 36px; padding: 0 14px; border-radius: 8px; border: 0.5px solid var(--border-strong);
+    background: transparent; color: var(--text-primary); cursor: pointer;
   }
-  button:hover { background: var(--surface-1, #f4f4f4); }
+  button:hover { background: var(--surface-1); }
   button:active { transform: scale(0.98); }
-  button.primary { background: #111; color: #fff; border-color: #111; }
-  button.primary:hover { background: #333; }
-  button.danger { color: #b3261e; border-color: #e0a5a0; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.primary:hover { opacity: 0.85; }
+  button.danger { color: #e0574c; border-color: #7a3530; }
   button.small { height: 28px; padding: 0 10px; font-size: 12px; }
   .card {
-    background: var(--surface-2, #fff); border: 0.5px solid var(--border, #ddd); border-radius: 12px;
+    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px;
     padding: 16px 18px; margin-bottom: 16px;
   }
   .section-title { font-size: 16px; font-weight: 500; margin: 0 0 10px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border, #e5e5e5); }
-  th { color: var(--text-secondary, #666); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border); }
+  th { color: var(--text-secondary); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
   tr:last-child td { border-bottom: none; }
   .rank-badge {
     display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
-    border-radius: 50%; background: var(--surface-1, #f0f0f0); font-weight: 500; font-size: 13px; margin-right: 6px;
+    border-radius: 50%; background: var(--surface-1); font-weight: 500; font-size: 13px; margin-right: 6px;
   }
   .rank-badge.gold { background: #f5d98a; color: #6b4e00; }
   .rank-badge.silver { background: #dcdcdc; color: #4a4a4a; }
   .rank-badge.bronze { background: #e8b98a; color: #6b3d00; }
   .score { font-weight: 500; font-size: 15px; }
   .cat-row { display: grid; grid-template-columns: 1fr 140px 90px 60px; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .cat-row label { font-size: 13px; color: var(--text-secondary, #666); display: flex; align-items: center; gap: 6px; }
-  .empty { color: var(--text-muted, #999); font-size: 14px; padding: 20px 0; text-align: center; }
+  .cat-row label { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 20px 0; text-align: center; }
   .row-actions { display: flex; gap: 6px; }
   .modal-bg {
-    position: static; margin-top: 12px; padding: 16px; border-radius: 12px;
-    background: var(--surface-1, #f6f6f6); border: 0.5px solid var(--border, #ddd);
+    margin-top: 12px; padding: 16px; border-radius: 12px;
+    background: var(--surface-1); border: 0.5px solid var(--border);
   }
   .field { margin-bottom: 10px; }
-  .field label { display: block; font-size: 12px; color: var(--text-secondary, #666); margin-bottom: 4px; }
+  .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
   .field input { width: 100%; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
-  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--surface-1, #eee); color: var(--text-secondary, #666); margin-left: 6px; }
-  .hint { font-size: 12px; color: var(--text-muted, #999); margin-top: 6px; }
+  .hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
   .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
- 
+
+  /* Home page */
+  .hero { padding: 30px 0 10px; }
+  .hero h1 { font-size: 30px; margin-bottom: 10px; }
+  .hero p { font-size: 15px; color: var(--text-secondary); max-width: 560px; line-height: 1.6; }
+  .example-block { margin-top: 6px; font-size: 13px; color: var(--text-muted); }
+  .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 20px; }
+  .board-card {
+    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .board-card:hover { border-color: var(--border-strong); }
+  .board-card .bname { font-weight: 500; font-size: 15px; margin-bottom: 4px; }
+  .board-card .bmeta { font-size: 12px; color: var(--text-muted); }
+  .board-card.new-card {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    color: var(--text-secondary); border-style: dashed;
+  }
+
+  /* Settings page */
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 0.5px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row .label { font-size: 14px; }
+  .settings-row .desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .segmented { display: inline-flex; border: 0.5px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+  .segmented button {
+    border: none; border-radius: 0; height: 32px; padding: 0 12px; font-size: 13px;
+  }
+  .segmented button.active { background: var(--accent); color: var(--accent-text); }
+  .segmented button + button { border-left: 0.5px solid var(--border-strong); }
+
+  /* Nav widget */
   .nav-widget {
     position: fixed; bottom: 20px; left: 20px; z-index: 1000;
-    background: var(--surface-2, #fff); border: 0.5px solid var(--border, #ddd);
-    border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    background: var(--surface-2); border: 0.5px solid var(--border);
+    border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.16);
     overflow: hidden; transition: width 0.2s ease, height 0.2s ease;
     width: 44px; height: 44px;
   }
-  .nav-widget:hover {
-    width: 200px; height: auto; max-height: 320px;
-  }
+  .nav-widget:hover { width: 210px; height: auto; max-height: 340px; }
   .nav-toggle {
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; cursor: pointer;
   }
-  .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary, #111); }
+  .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary); }
   .nav-body {
     display: flex; flex-direction: column;
     opacity: 0; visibility: hidden; transition: opacity 0.15s ease 0.05s;
-    max-height: 276px; overflow-y: auto;
+    max-height: 296px; overflow-y: auto;
   }
   .nav-widget:hover .nav-body { opacity: 1; visibility: visible; }
   .nav-section-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
-    color: var(--text-muted, #999); padding: 8px 14px 2px;
+    color: var(--text-muted); padding: 8px 14px 2px;
   }
   .nav-item {
     display: flex; align-items: center; gap: 8px; padding: 8px 14px;
-    font-size: 13px; color: var(--text-primary, #111); cursor: pointer; white-space: nowrap;
+    font-size: 13px; color: var(--text-primary); cursor: pointer; white-space: nowrap;
     border: none; background: none; width: 100%; text-align: left;
   }
-  .nav-item:hover { background: var(--surface-1, #f4f4f4); }
+  .nav-item:hover { background: var(--surface-1); }
   .nav-item.active { font-weight: 600; }
-  .nav-divider { height: 1px; background: var(--border, #e5e5e5); margin: 4px 0; }
+  .nav-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .nav-icon { width: 15px; height: 15px; flex-shrink: 0; }
 </style>
- 
-<div class="wrap">
-  <h1>Ranker</h1>
-  <p class="sub">Rank anything by any stats. Data saves automatically.</p>
- 
-  <div class="toolbar">
-    <select id="boardSelect"></select>
-    <button id="newBoardBtn">+ New board</button>
-    <button id="renameBoardBtn">Rename</button>
-    <button id="deleteBoardBtn" class="danger">Delete board</button>
-  </div>
- 
-  <div id="app"></div>
-</div>
- 
+
+<div class="wrap" id="wrap"></div>
+
 <div class="nav-widget" id="navWidget">
   <div class="nav-toggle">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -120,95 +150,92 @@
   </div>
   <div class="nav-body" id="navBody"></div>
 </div>
- 
+
 <script>
 (function() {
-  var state = { boards: {}, activeBoardId: null };
-  var loaded = false;
- 
+  var state = {
+    boards: {},
+    activeBoardId: null,
+    settings: { theme: 'system', defaultHigherIsBetter: true }
+  };
+  var page = 'home'; // 'home' | 'settings' | 'newBoard' | 'board'
+
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
- 
+
   function defaultBoard(name) {
     return { id: uid(), name: name, categories: [], subjects: [] };
   }
- 
+
   async function loadState() {
     try {
       var raw = localStorage.getItem('ranker-state');
       if (raw) {
-        state = JSON.parse(raw);
+        var parsed = JSON.parse(raw);
+        state.boards = parsed.boards || {};
+        state.activeBoardId = parsed.activeBoardId || null;
+        state.settings = Object.assign({ theme: 'system', defaultHigherIsBetter: true }, parsed.settings || {});
       }
-    } catch (e) {
-      // no existing data
-    }
-    if (!state.boards || Object.keys(state.boards).length === 0) {
-      var b = defaultBoard('My board');
-      state.boards = {};
-      state.boards[b.id] = b;
-      state.activeBoardId = b.id;
-    }
-    if (!state.activeBoardId || !state.boards[state.activeBoardId]) {
-      state.activeBoardId = Object.keys(state.boards)[0];
-    }
-    loaded = true;
+    } catch (e) { /* no existing data */ }
   }
- 
+
   async function saveState() {
-    try {
-      localStorage.setItem('ranker-state', JSON.stringify(state));
-    } catch (e) {
-      console.error('Save failed', e);
-    }
+    try { localStorage.setItem('ranker-state', JSON.stringify(state)); }
+    catch (e) { console.error('Save failed', e); }
   }
- 
+
   function activeBoard() {
     return state.boards[state.activeBoardId];
   }
- 
+
+  function applyTheme() {
+    var t = state.settings.theme;
+    var resolved = t;
+    if (t === 'system') {
+      resolved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', resolved);
+  }
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+      if (state.settings.theme === 'system') applyTheme();
+    });
+  }
+
   function computeRankings(board) {
     var subjects = board.subjects;
     var categories = board.categories;
     var totals = {};
     subjects.forEach(function(s) { totals[s.id] = 0; });
-    var perCategoryPoints = {};
- 
+
     categories.forEach(function(cat) {
       var entries = subjects.map(function(s) {
         var val = (s.stats && s.stats[cat.id] !== undefined && s.stats[cat.id] !== '') ? Number(s.stats[cat.id]) : null;
         return { id: s.id, val: val };
       }).filter(function(e) { return e.val !== null && !isNaN(e.val); });
- 
+
       entries.sort(function(a, b) {
         return cat.higherIsBetter ? (b.val - a.val) : (a.val - b.val);
       });
- 
+
       var n = entries.length;
       var points = {};
       var i = 0;
       while (i < n) {
         var j = i;
         while (j + 1 < n && entries[j + 1].val === entries[i].val) j++;
-        // rank position i (0-indexed) => points = n - (i+1), same for all tied in [i, j]
         var pts = n - (i + 1);
-        for (var k = i; k <= j; k++) {
-          points[entries[k].id] = pts;
-        }
+        for (var k = i; k <= j; k++) points[entries[k].id] = pts;
         i = j + 1;
       }
- 
-      entries.forEach(function(e) {
-        totals[e.id] = (totals[e.id] || 0) + points[e.id];
-      });
-      perCategoryPoints[cat.id] = points;
+      entries.forEach(function(e) { totals[e.id] = (totals[e.id] || 0) + points[e.id]; });
     });
- 
-    var ranked = subjects.map(function(s) {
-      return { subject: s, total: totals[s.id] || 0 };
-    });
+
+    var ranked = subjects.map(function(s) { return { subject: s, total: totals[s.id] || 0 }; });
     ranked.sort(function(a, b) { return b.total - a.total; });
-    return { ranked: ranked, perCategoryPoints: perCategoryPoints };
+    return ranked;
   }
- 
+
   function el(tag, attrs, children) {
     var e = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function(k) {
@@ -220,70 +247,182 @@
     (children || []).forEach(function(c) { if (c) e.appendChild(c); });
     return e;
   }
- 
   function text(str) { return document.createTextNode(str); }
- 
+  function goTo(p, boardId) {
+    page = p;
+    if (boardId) state.activeBoardId = boardId;
+    addCatOpen = false; addSubjOpen = false; editingSubjId = null;
+    saveState(); render();
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
   var addCatOpen = false;
   var addSubjOpen = false;
   var editingSubjId = null;
- 
-  function render() {
-    var app = document.getElementById('app');
-    app.innerHTML = '';
+
+  // ---------- Page renderers ----------
+
+  function renderHome(container) {
+    var hero = el('div', { class: 'hero' }, [
+      el('h1', {}, [text('Ranker')]),
+      el('p', {}, [
+        text('Ranker turns your opinions into rankings. Create a board for anything — soccer players, foods, movies, coworkers — add the subjects you want to compare, and score them across whatever categories matter to you. '),
+      ]),
+      el('p', { class: 'example-block' }, [
+        text('Example: rank Messi, Ronaldo, Mbappé, and Neymar by goals, assists, and dribbles. Each category hands out points based on where a subject placed — best in category gets the most points, worst gets none — and the totals decide the overall ranking.')
+      ])
+    ]);
+    container.appendChild(hero);
+
+    var grid = el('div', { class: 'board-grid' });
+    Object.keys(state.boards).forEach(function(id) {
+      var b = state.boards[id];
+      grid.appendChild(el('button', { class: 'board-card', onclick: function() { goTo('board', id); } }, [
+        el('div', { class: 'bname' }, [text(b.name)]),
+        el('div', { class: 'bmeta' }, [text(b.subjects.length + ' subject' + (b.subjects.length === 1 ? '' : 's') + ' · ' + b.categories.length + ' categor' + (b.categories.length === 1 ? 'y' : 'ies'))])
+      ]));
+    });
+    grid.appendChild(el('button', { class: 'board-card new-card', onclick: function() { goTo('newBoard'); } }, [
+      newIcon(), text('New board')
+    ]));
+    container.appendChild(grid);
+  }
+
+  function newIcon() {
+    var span = el('span', { style: 'display:inline-flex;align-items:center;' });
+    span.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+    return span;
+  }
+
+  function renderNewBoard(container) {
+    container.appendChild(el('h2', {}, [text('New board')]));
+    container.appendChild(el('p', { class: 'sub' }, [text('Give your board a name to get started. You can add categories and subjects once it\'s created.')]));
+
+    var card = el('div', { class: 'card' });
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', {}, [text('Board name')]),
+      el('input', { type: 'text', id: 'newBoardName', placeholder: 'e.g. Soccer players, Best pizza in town' })
+    ]));
+    var actions = el('div', { style: 'display:flex; gap:8px; margin-top: 6px;' }, [
+      el('button', { class: 'primary', onclick: function() {
+        var input = document.getElementById('newBoardName');
+        var name = input.value.trim();
+        if (!name) { input.focus(); return; }
+        var b = defaultBoard(name);
+        state.boards[b.id] = b;
+        goTo('board', b.id);
+      }}, [text('Create board')]),
+      el('button', { onclick: function() { goTo('home'); } }, [text('Cancel')])
+    ]);
+    card.appendChild(actions);
+    container.appendChild(card);
+  }
+
+  function renderSettings(container) {
+    container.appendChild(el('h2', {}, [text('Settings')]));
+    var card = el('div', { class: 'card' });
+
+    // Theme
+    var themeRow = el('div', { class: 'settings-row' });
+    themeRow.appendChild(el('div', {}, [
+      el('div', { class: 'label' }, [text('Appearance')]),
+      el('div', { class: 'desc' }, [text('Choose light, dark, or follow your system setting.')])
+    ]));
+    var themeSeg = el('div', { class: 'segmented' });
+    [['system','System'], ['light','Light'], ['dark','Dark']].forEach(function(pair) {
+      themeSeg.appendChild(el('button', { class: state.settings.theme === pair[0] ? 'active' : '', onclick: function() {
+        state.settings.theme = pair[0];
+        applyTheme(); saveState(); render();
+      }}, [text(pair[1])]));
+    });
+    themeRow.appendChild(themeSeg);
+    card.appendChild(themeRow);
+
+    // Default sort direction
+    var dirRow = el('div', { class: 'settings-row' });
+    dirRow.appendChild(el('div', {}, [
+      el('div', { class: 'label' }, [text('Default category direction')]),
+      el('div', { class: 'desc' }, [text('Starting value for new categories — you can still flip it per category.')])
+    ]));
+    var dirSeg = el('div', { class: 'segmented' });
+    [[true,'Higher = better'], [false,'Lower = better']].forEach(function(pair) {
+      dirSeg.appendChild(el('button', { class: state.settings.defaultHigherIsBetter === pair[0] ? 'active' : '', onclick: function() {
+        state.settings.defaultHigherIsBetter = pair[0];
+        saveState(); render();
+      }}, [text(pair[1])]));
+    });
+    dirRow.appendChild(dirSeg);
+    card.appendChild(dirRow);
+
+    container.appendChild(card);
+  }
+
+  function renderBoardPage(container) {
     var board = activeBoard();
-    if (!board) return;
- 
-    renderBoardSelect();
-    renderNav();
- 
+    if (!board) { goTo('home'); return; }
+
+    var header = el('div', { class: 'board-header' }, [
+      el('h2', {}, [text(board.name)]),
+      el('div', { style: 'display:flex; gap:8px;' }, [
+        el('button', { class: 'small', onclick: function() {
+          var name = prompt('Rename board:', board.name);
+          if (!name || !name.trim()) return;
+          board.name = name.trim();
+          saveState(); render();
+        }}, [text('Rename')]),
+        el('button', { class: 'small danger', onclick: function() {
+          if (Object.keys(state.boards).length === 1) { alert('You need at least one board.'); return; }
+          if (!confirm('Delete "' + board.name + '" and all its data? This cannot be undone.')) return;
+          delete state.boards[board.id];
+          state.activeBoardId = Object.keys(state.boards)[0];
+          goTo('home');
+        }}, [text('Delete board')])
+      ])
+    ]);
+    container.appendChild(header);
+
     // Categories card
     var catCard = el('div', { class: 'card' });
-    var catHeader = el('div', { class: 'board-header' }, [
+    catCard.appendChild(el('div', { class: 'board-header' }, [
       el('div', { class: 'section-title' }, [text('Categories')]),
       el('button', { class: 'small', onclick: function() { addCatOpen = !addCatOpen; render(); } }, [text(addCatOpen ? 'Cancel' : '+ Add category')])
-    ]);
-    catCard.appendChild(catHeader);
- 
+    ]));
+
     if (board.categories.length === 0 && !addCatOpen) {
       catCard.appendChild(el('div', { class: 'empty' }, [text('No categories yet. Add one to start scoring.')]));
     } else {
       board.categories.forEach(function(cat) {
         var row = el('div', { class: 'cat-row' });
         row.appendChild(el('div', {}, [text(cat.name)]));
-        var dirLabel = el('label', {}, [text(cat.higherIsBetter ? 'Higher = better' : 'Lower = better')]);
-        var toggleBtn = el('button', { class: 'small', onclick: function() {
-          cat.higherIsBetter = !cat.higherIsBetter;
-          saveState(); render();
-        }}, [text('Flip')]);
-        var dirWrap = el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [dirLabel, toggleBtn]);
+        var dirWrap = el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [
+          el('label', {}, [text(cat.higherIsBetter ? 'Higher = better' : 'Lower = better')]),
+          el('button', { class: 'small', onclick: function() { cat.higherIsBetter = !cat.higherIsBetter; saveState(); render(); } }, [text('Flip')])
+        ]);
         row.appendChild(dirWrap);
         row.appendChild(el('div', {}));
-        var delBtn = el('button', { class: 'small danger', onclick: function() {
+        row.appendChild(el('button', { class: 'small danger', onclick: function() {
           board.categories = board.categories.filter(function(c) { return c.id !== cat.id; });
           board.subjects.forEach(function(s) { if (s.stats) delete s.stats[cat.id]; });
           saveState(); render();
-        }}, [text('Remove')]);
-        row.appendChild(delBtn);
+        }}, [text('Remove')]));
         catCard.appendChild(row);
       });
     }
- 
+
     if (addCatOpen) {
       var modal = el('div', { class: 'modal-bg' });
-      var nameField = el('div', { class: 'field' }, [
+      modal.appendChild(el('div', { class: 'field' }, [
         el('label', {}, [text('Category name')]),
         el('input', { type: 'text', id: 'newCatName', placeholder: 'e.g. Goals, Price, Tastiness' })
-      ]);
+      ]));
       var dirField = el('div', { class: 'field' }, [
-        el('label', {}, [text('Direction')]),
-        (function() {
-          var sel = el('select', { id: 'newCatDir' });
-          sel.appendChild(el('option', { value: 'higher' }, [text('Higher value is better')]));
-          sel.appendChild(el('option', { value: 'lower' }, [text('Lower value is better')]));
-          return sel;
-        })()
+        el('label', {}, [text('Direction')])
       ]);
-      modal.appendChild(nameField);
+      var sel = el('select', { id: 'newCatDir' });
+      sel.appendChild(el('option', { value: 'higher' }, [text('Higher value is better')]));
+      sel.appendChild(el('option', { value: 'lower' }, [text('Lower value is better')]));
+      sel.value = state.settings.defaultHigherIsBetter ? 'higher' : 'lower';
+      dirField.appendChild(sel);
       modal.appendChild(dirField);
       modal.appendChild(el('button', { class: 'primary', onclick: function() {
         var nameInput = document.getElementById('newCatName');
@@ -296,70 +435,61 @@
       }}, [text('Add category')]));
       catCard.appendChild(modal);
     }
-    app.appendChild(catCard);
- 
+    container.appendChild(catCard);
+
     // Subjects card
     var subjCard = el('div', { class: 'card' });
-    var subjHeader = el('div', { class: 'board-header' }, [
+    subjCard.appendChild(el('div', { class: 'board-header' }, [
       el('div', { class: 'section-title' }, [text('Subjects')]),
       el('button', { class: 'small', onclick: function() {
         if (board.categories.length === 0) { alert('Add at least one category first.'); return; }
         addSubjOpen = !addSubjOpen; editingSubjId = null; render();
       }}, [text(addSubjOpen ? 'Cancel' : '+ Add subject')])
-    ]);
-    subjCard.appendChild(subjHeader);
- 
+    ]));
+
     if (board.subjects.length === 0 && !addSubjOpen) {
       subjCard.appendChild(el('div', { class: 'empty' }, [text('No subjects yet.')]));
     } else if (board.subjects.length > 0) {
       var table = el('table');
-      var thead = el('thead');
       var headRow = el('tr', {}, [el('th', {}, [text('Name')])]);
-      board.categories.forEach(function(cat) {
-        headRow.appendChild(el('th', {}, [text(cat.name)]));
-      });
+      board.categories.forEach(function(cat) { headRow.appendChild(el('th', {}, [text(cat.name)])); });
       headRow.appendChild(el('th', {}));
-      thead.appendChild(headRow);
-      table.appendChild(thead);
+      table.appendChild(el('thead', {}, [headRow]));
       var tbody = el('tbody');
       board.subjects.forEach(function(s) {
-        var tr = el('tr');
-        tr.appendChild(el('td', {}, [text(s.name)]));
+        var tr = el('tr', {}, [el('td', {}, [text(s.name)])]);
         board.categories.forEach(function(cat) {
           var v = (s.stats && s.stats[cat.id] !== undefined) ? s.stats[cat.id] : '';
           tr.appendChild(el('td', {}, [text(v === '' ? '—' : v)]));
         });
-        var actions = el('div', { class: 'row-actions' });
-        actions.appendChild(el('button', { class: 'small', onclick: function() {
-          editingSubjId = s.id; addSubjOpen = true; render();
-        }}, [text('Edit')]));
-        actions.appendChild(el('button', { class: 'small danger', onclick: function() {
-          board.subjects = board.subjects.filter(function(x) { return x.id !== s.id; });
-          saveState(); render();
-        }}, [text('Delete')]));
+        var actions = el('div', { class: 'row-actions' }, [
+          el('button', { class: 'small', onclick: function() { editingSubjId = s.id; addSubjOpen = true; render(); } }, [text('Edit')]),
+          el('button', { class: 'small danger', onclick: function() {
+            board.subjects = board.subjects.filter(function(x) { return x.id !== s.id; });
+            saveState(); render();
+          }}, [text('Delete')])
+        ]);
         tr.appendChild(el('td', {}, [actions]));
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
       subjCard.appendChild(table);
     }
- 
+
     if (addSubjOpen) {
       var editing = editingSubjId ? board.subjects.find(function(s) { return s.id === editingSubjId; }) : null;
       var modal2 = el('div', { class: 'modal-bg' });
-      var nameField2 = el('div', { class: 'field' }, [
+      modal2.appendChild(el('div', { class: 'field' }, [
         el('label', {}, [text('Subject name')]),
         el('input', { type: 'text', id: 'newSubjName', value: editing ? editing.name : '', placeholder: 'e.g. Messi' })
-      ]);
-      modal2.appendChild(nameField2);
+      ]));
       var statsWrap = el('div', { class: 'stat-inputs' });
       board.categories.forEach(function(cat) {
         var val = editing && editing.stats && editing.stats[cat.id] !== undefined ? editing.stats[cat.id] : '';
-        var f = el('div', { class: 'field' }, [
+        statsWrap.appendChild(el('div', { class: 'field' }, [
           el('label', {}, [text(cat.name)]),
           el('input', { type: 'number', step: 'any', id: 'stat_' + cat.id, value: val })
-        ]);
-        statsWrap.appendChild(f);
+        ]));
       });
       modal2.appendChild(statsWrap);
       modal2.appendChild(el('button', { class: 'primary', onclick: function() {
@@ -371,128 +501,83 @@
           var input = document.getElementById('stat_' + cat.id);
           if (input.value !== '') stats[cat.id] = Number(input.value);
         });
-        if (editing) {
-          editing.name = name;
-          editing.stats = stats;
-        } else {
-          board.subjects.push({ id: uid(), name: name, stats: stats });
-        }
+        if (editing) { editing.name = name; editing.stats = stats; }
+        else { board.subjects.push({ id: uid(), name: name, stats: stats }); }
         addSubjOpen = false; editingSubjId = null;
         saveState(); render();
       }}, [text(editing ? 'Save changes' : 'Add subject')]));
       subjCard.appendChild(modal2);
     }
-    app.appendChild(subjCard);
- 
+    container.appendChild(subjCard);
+
     // Rankings card
     var rankCard = el('div', { class: 'card' });
     rankCard.appendChild(el('div', { class: 'section-title' }, [text('Rankings')]));
     if (board.subjects.length === 0 || board.categories.length === 0) {
       rankCard.appendChild(el('div', { class: 'empty' }, [text('Add categories and subjects to see rankings.')]));
     } else {
-      var result = computeRankings(board);
-      var rTable = el('table');
-      var rThead = el('thead', {}, [el('tr', {}, [
-        el('th', {}, [text('Rank')]),
-        el('th', {}, [text('Subject')]),
-        el('th', {}, [text('Total points')])
-      ])]);
-      rTable.appendChild(rThead);
+      var ranked = computeRankings(board);
+      var rTable = el('table', {}, [el('thead', {}, [el('tr', {}, [
+        el('th', {}, [text('Rank')]), el('th', {}, [text('Subject')]), el('th', {}, [text('Total points')])
+      ])])]);
       var rBody = el('tbody');
       var prevTotal = null, displayRank = 0, actualIndex = 0;
-      result.ranked.forEach(function(r) {
+      ranked.forEach(function(r) {
         actualIndex++;
         if (r.total !== prevTotal) { displayRank = actualIndex; prevTotal = r.total; }
         var badgeClass = displayRank === 1 ? 'gold' : displayRank === 2 ? 'silver' : displayRank === 3 ? 'bronze' : '';
-        var tr = el('tr', {}, [
+        rBody.appendChild(el('tr', {}, [
           el('td', {}, [el('span', { class: 'rank-badge ' + badgeClass }, [text(String(displayRank))])]),
           el('td', {}, [text(r.subject.name)]),
           el('td', {}, [el('span', { class: 'score' }, [text(String(r.total))])])
-        ]);
-        rBody.appendChild(tr);
+        ]));
       });
       rTable.appendChild(rBody);
       rankCard.appendChild(rTable);
       rankCard.appendChild(el('div', { class: 'hint' }, [text('Points per category: 1st place gets (number of scored subjects − 1), down to 0 for last. Tied subjects share the same rank and points.')]));
     }
-    app.appendChild(rankCard);
+    container.appendChild(rankCard);
   }
- 
-  function renderBoardSelect() {
-    var sel = document.getElementById('boardSelect');
-    sel.innerHTML = '';
-    Object.keys(state.boards).forEach(function(id) {
-      var opt = el('option', { value: id }, [text(state.boards[id].name)]);
-      if (id === state.activeBoardId) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
- 
+
+  // ---------- Nav ----------
+
   function renderNav() {
     var navBody = document.getElementById('navBody');
-    if (!navBody) return;
     navBody.innerHTML = '';
- 
-    navBody.appendChild(el('button', { class: 'nav-item active', onclick: function() {
-      // Home = scroll to top of the app
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }}, [text('🏠 Home')]));
- 
-    navBody.appendChild(el('button', { class: 'nav-item', onclick: function() {
-      document.getElementById('renameBoardBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }}, [text('⚙️ Settings')]));
- 
+
+    navBody.appendChild(el('button', { class: 'nav-item' + (page === 'home' ? ' active' : ''), onclick: function() { goTo('home'); } }, [text('🏠 Home')]));
+    navBody.appendChild(el('button', { class: 'nav-item' + (page === 'settings' ? ' active' : ''), onclick: function() { goTo('settings'); } }, [text('⚙️ Settings')]));
+    navBody.appendChild(el('button', { class: 'nav-item' + (page === 'newBoard' ? ' active' : ''), onclick: function() { goTo('newBoard'); } }, [text('＋ New board')]));
+
     navBody.appendChild(el('div', { class: 'nav-divider' }));
     navBody.appendChild(el('div', { class: 'nav-section-label' }, [text('Boards')]));
- 
+
     Object.keys(state.boards).forEach(function(id) {
-      var board = state.boards[id];
-      var item = el('button', { class: 'nav-item' + (id === state.activeBoardId ? ' active' : ''), onclick: function() {
-        state.activeBoardId = id;
-        addCatOpen = false; addSubjOpen = false; editingSubjId = null;
-        saveState(); render();
-      }}, [text(board.name)]);
-      navBody.appendChild(item);
+      var b = state.boards[id];
+      var isActive = page === 'board' && id === state.activeBoardId;
+      navBody.appendChild(el('button', { class: 'nav-item' + (isActive ? ' active' : ''), onclick: function() { goTo('board', id); } }, [text(b.name)]));
     });
   }
- 
-  document.getElementById('boardSelect').addEventListener('change', function(e) {
-    state.activeBoardId = e.target.value;
-    addCatOpen = false; addSubjOpen = false; editingSubjId = null;
-    saveState(); render();
+
+  // ---------- Main render ----------
+
+  function render() {
+    applyTheme();
+    var wrap = document.getElementById('wrap');
+    wrap.innerHTML = '';
+    if (page === 'home') renderHome(wrap);
+    else if (page === 'settings') renderSettings(wrap);
+    else if (page === 'newBoard') renderNewBoard(wrap);
+    else if (page === 'board') renderBoardPage(wrap);
+    renderNav();
+  }
+
+  loadState().then(function() {
+    page = Object.keys(state.boards).length > 0 ? 'home' : 'home';
+    render();
   });
- 
-  document.getElementById('newBoardBtn').addEventListener('click', function() {
-    var name = prompt('Name your new board (e.g. "Soccer players", "Foods"):');
-    if (!name || !name.trim()) return;
-    var b = defaultBoard(name.trim());
-    state.boards[b.id] = b;
-    state.activeBoardId = b.id;
-    saveState(); render();
-  });
- 
-  document.getElementById('renameBoardBtn').addEventListener('click', function() {
-    var board = activeBoard();
-    if (!board) return;
-    var name = prompt('Rename board:', board.name);
-    if (!name || !name.trim()) return;
-    board.name = name.trim();
-    saveState(); render();
-  });
- 
-  document.getElementById('deleteBoardBtn').addEventListener('click', function() {
-    var board = activeBoard();
-    if (!board) return;
-    if (Object.keys(state.boards).length === 1) { alert('You need at least one board.'); return; }
-    if (!confirm('Delete "' + board.name + '" and all its data? This cannot be undone.')) return;
-    delete state.boards[board.id];
-    state.activeBoardId = Object.keys(state.boards)[0];
-    saveState(); render();
-  });
- 
-  loadState().then(render);
 })();
 </script>
- 
+
 </body>
 </html>
