@@ -127,16 +127,18 @@
   }
   .nav-toggle {
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; cursor: pointer;
+    flex-shrink: 0; cursor: pointer; overflow: hidden;
+    transition: height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
   }
-  .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary); }
+  .nav-widget:hover .nav-toggle { height: 0; opacity: 0; }
+  .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary); flex-shrink: 0; }
   .nav-body {
     display: flex; flex-direction: column;
-    opacity: 0; transition: opacity 0.18s ease;
+    opacity: 0; transition: opacity 0.18s ease, height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     height: calc(100% - 44px);
   }
-  .nav-widget:hover .nav-body { opacity: 1; transition: opacity 0.18s ease 0.14s; }
+  .nav-widget:hover .nav-body { opacity: 1; height: 100%; transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1); }
   .nav-section-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--text-muted); padding: 8px 14px 2px;
@@ -575,9 +577,11 @@
 
     // Measure natural content height so the widget can smoothly animate to a fixed
     // target instead of animating to/from `auto`, which browsers can't tween.
+    // The toggle icon collapses to 0 height on hover, so the body gets the full box —
+    // add a small buffer so short lists don't trigger a needless scrollbar.
     var navWidget = document.getElementById('navWidget');
-    var contentHeight = navBody.scrollHeight; // includes all nav items
-    navWidget.style.setProperty('--nav-expanded-height', (44 + contentHeight) + 'px');
+    var contentHeight = navBody.scrollHeight;
+    navWidget.style.setProperty('--nav-expanded-height', (contentHeight + 12) + 'px');
   }
 
   // ---------- Main render ----------
