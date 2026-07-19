@@ -62,33 +62,76 @@
   .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--surface-1, #eee); color: var(--text-secondary, #666); margin-left: 6px; }
   .hint { font-size: 12px; color: var(--text-muted, #999); margin-top: 6px; }
   .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+ 
+  .nav-widget {
+    position: fixed; bottom: 20px; left: 20px; z-index: 1000;
+    background: var(--surface-2, #fff); border: 0.5px solid var(--border, #ddd);
+    border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    overflow: hidden; transition: width 0.2s ease, height 0.2s ease;
+    width: 44px; height: 44px;
+  }
+  .nav-widget:hover {
+    width: 200px; height: auto; max-height: 320px;
+  }
+  .nav-toggle {
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+  }
+  .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary, #111); }
+  .nav-body {
+    display: flex; flex-direction: column;
+    opacity: 0; visibility: hidden; transition: opacity 0.15s ease 0.05s;
+    max-height: 276px; overflow-y: auto;
+  }
+  .nav-widget:hover .nav-body { opacity: 1; visibility: visible; }
+  .nav-section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted, #999); padding: 8px 14px 2px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    font-size: 13px; color: var(--text-primary, #111); cursor: pointer; white-space: nowrap;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface-1, #f4f4f4); }
+  .nav-item.active { font-weight: 600; }
+  .nav-divider { height: 1px; background: var(--border, #e5e5e5); margin: 4px 0; }
 </style>
-
+ 
 <div class="wrap">
   <h1>Ranker</h1>
   <p class="sub">Rank anything by any stats. Data saves automatically.</p>
-
+ 
   <div class="toolbar">
     <select id="boardSelect"></select>
     <button id="newBoardBtn">+ New board</button>
     <button id="renameBoardBtn">Rename</button>
     <button id="deleteBoardBtn" class="danger">Delete board</button>
   </div>
-
+ 
   <div id="app"></div>
 </div>
-
+ 
+<div class="nav-widget" id="navWidget">
+  <div class="nav-toggle">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5Z"/>
+    </svg>
+  </div>
+  <div class="nav-body" id="navBody"></div>
+</div>
+ 
 <script>
 (function() {
   var state = { boards: {}, activeBoardId: null };
   var loaded = false;
-
+ 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-
+ 
   function defaultBoard(name) {
     return { id: uid(), name: name, categories: [], subjects: [] };
   }
-
+ 
   async function loadState() {
     try {
       var raw = localStorage.getItem('ranker-state');
@@ -109,7 +152,7 @@
     }
     loaded = true;
   }
-
+ 
   async function saveState() {
     try {
       localStorage.setItem('ranker-state', JSON.stringify(state));
@@ -117,28 +160,28 @@
       console.error('Save failed', e);
     }
   }
-
+ 
   function activeBoard() {
     return state.boards[state.activeBoardId];
   }
-
+ 
   function computeRankings(board) {
     var subjects = board.subjects;
     var categories = board.categories;
     var totals = {};
     subjects.forEach(function(s) { totals[s.id] = 0; });
     var perCategoryPoints = {};
-
+ 
     categories.forEach(function(cat) {
       var entries = subjects.map(function(s) {
         var val = (s.stats && s.stats[cat.id] !== undefined && s.stats[cat.id] !== '') ? Number(s.stats[cat.id]) : null;
         return { id: s.id, val: val };
       }).filter(function(e) { return e.val !== null && !isNaN(e.val); });
-
+ 
       entries.sort(function(a, b) {
         return cat.higherIsBetter ? (b.val - a.val) : (a.val - b.val);
       });
-
+ 
       var n = entries.length;
       var points = {};
       var i = 0;
@@ -152,20 +195,20 @@
         }
         i = j + 1;
       }
-
+ 
       entries.forEach(function(e) {
         totals[e.id] = (totals[e.id] || 0) + points[e.id];
       });
       perCategoryPoints[cat.id] = points;
     });
-
+ 
     var ranked = subjects.map(function(s) {
       return { subject: s, total: totals[s.id] || 0 };
     });
     ranked.sort(function(a, b) { return b.total - a.total; });
     return { ranked: ranked, perCategoryPoints: perCategoryPoints };
   }
-
+ 
   function el(tag, attrs, children) {
     var e = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function(k) {
@@ -177,21 +220,22 @@
     (children || []).forEach(function(c) { if (c) e.appendChild(c); });
     return e;
   }
-
+ 
   function text(str) { return document.createTextNode(str); }
-
+ 
   var addCatOpen = false;
   var addSubjOpen = false;
   var editingSubjId = null;
-
+ 
   function render() {
     var app = document.getElementById('app');
     app.innerHTML = '';
     var board = activeBoard();
     if (!board) return;
-
+ 
     renderBoardSelect();
-
+    renderNav();
+ 
     // Categories card
     var catCard = el('div', { class: 'card' });
     var catHeader = el('div', { class: 'board-header' }, [
@@ -199,7 +243,7 @@
       el('button', { class: 'small', onclick: function() { addCatOpen = !addCatOpen; render(); } }, [text(addCatOpen ? 'Cancel' : '+ Add category')])
     ]);
     catCard.appendChild(catHeader);
-
+ 
     if (board.categories.length === 0 && !addCatOpen) {
       catCard.appendChild(el('div', { class: 'empty' }, [text('No categories yet. Add one to start scoring.')]));
     } else {
@@ -223,7 +267,7 @@
         catCard.appendChild(row);
       });
     }
-
+ 
     if (addCatOpen) {
       var modal = el('div', { class: 'modal-bg' });
       var nameField = el('div', { class: 'field' }, [
@@ -253,7 +297,7 @@
       catCard.appendChild(modal);
     }
     app.appendChild(catCard);
-
+ 
     // Subjects card
     var subjCard = el('div', { class: 'card' });
     var subjHeader = el('div', { class: 'board-header' }, [
@@ -264,7 +308,7 @@
       }}, [text(addSubjOpen ? 'Cancel' : '+ Add subject')])
     ]);
     subjCard.appendChild(subjHeader);
-
+ 
     if (board.subjects.length === 0 && !addSubjOpen) {
       subjCard.appendChild(el('div', { class: 'empty' }, [text('No subjects yet.')]));
     } else if (board.subjects.length > 0) {
@@ -299,7 +343,7 @@
       table.appendChild(tbody);
       subjCard.appendChild(table);
     }
-
+ 
     if (addSubjOpen) {
       var editing = editingSubjId ? board.subjects.find(function(s) { return s.id === editingSubjId; }) : null;
       var modal2 = el('div', { class: 'modal-bg' });
@@ -339,7 +383,7 @@
       subjCard.appendChild(modal2);
     }
     app.appendChild(subjCard);
-
+ 
     // Rankings card
     var rankCard = el('div', { class: 'card' });
     rankCard.appendChild(el('div', { class: 'section-title' }, [text('Rankings')]));
@@ -373,7 +417,7 @@
     }
     app.appendChild(rankCard);
   }
-
+ 
   function renderBoardSelect() {
     var sel = document.getElementById('boardSelect');
     sel.innerHTML = '';
@@ -383,13 +427,41 @@
       sel.appendChild(opt);
     });
   }
-
+ 
+  function renderNav() {
+    var navBody = document.getElementById('navBody');
+    if (!navBody) return;
+    navBody.innerHTML = '';
+ 
+    navBody.appendChild(el('button', { class: 'nav-item active', onclick: function() {
+      // Home = scroll to top of the app
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }}, [text('🏠 Home')]));
+ 
+    navBody.appendChild(el('button', { class: 'nav-item', onclick: function() {
+      document.getElementById('renameBoardBtn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }}, [text('⚙️ Settings')]));
+ 
+    navBody.appendChild(el('div', { class: 'nav-divider' }));
+    navBody.appendChild(el('div', { class: 'nav-section-label' }, [text('Boards')]));
+ 
+    Object.keys(state.boards).forEach(function(id) {
+      var board = state.boards[id];
+      var item = el('button', { class: 'nav-item' + (id === state.activeBoardId ? ' active' : ''), onclick: function() {
+        state.activeBoardId = id;
+        addCatOpen = false; addSubjOpen = false; editingSubjId = null;
+        saveState(); render();
+      }}, [text(board.name)]);
+      navBody.appendChild(item);
+    });
+  }
+ 
   document.getElementById('boardSelect').addEventListener('change', function(e) {
     state.activeBoardId = e.target.value;
     addCatOpen = false; addSubjOpen = false; editingSubjId = null;
     saveState(); render();
   });
-
+ 
   document.getElementById('newBoardBtn').addEventListener('click', function() {
     var name = prompt('Name your new board (e.g. "Soccer players", "Foods"):');
     if (!name || !name.trim()) return;
@@ -398,7 +470,7 @@
     state.activeBoardId = b.id;
     saveState(); render();
   });
-
+ 
   document.getElementById('renameBoardBtn').addEventListener('click', function() {
     var board = activeBoard();
     if (!board) return;
@@ -407,7 +479,7 @@
     board.name = name.trim();
     saveState(); render();
   });
-
+ 
   document.getElementById('deleteBoardBtn').addEventListener('click', function() {
     var board = activeBoard();
     if (!board) return;
@@ -417,10 +489,10 @@
     state.activeBoardId = Object.keys(state.boards)[0];
     saveState(); render();
   });
-
+ 
   loadState().then(render);
 })();
 </script>
-
+ 
 </body>
 </html>
