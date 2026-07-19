@@ -135,10 +135,19 @@
   .nav-body {
     display: flex; flex-direction: column;
     opacity: 0; transition: opacity 0.18s ease, height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-y: auto;
+    overflow-y: hidden;
     height: calc(100% - 44px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
   }
-  .nav-widget:hover .nav-body { opacity: 1; height: 100%; transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1); }
+  .nav-widget:hover .nav-body {
+    opacity: 1; height: 100%; overflow-y: auto;
+    transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1), overflow 0s linear 0.32s;
+  }
+  .nav-body::-webkit-scrollbar { width: 6px; }
+  .nav-body::-webkit-scrollbar-track { background: transparent; }
+  .nav-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .nav-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   .nav-section-label {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--text-muted); padding: 8px 14px 2px;
