@@ -123,7 +123,7 @@
   }
   .nav-widget:hover {
     width: 210px;
-    height: min(340px, var(--nav-expanded-height, 200px));
+    height: var(--nav-expanded-height, 200px);
   }
   .nav-toggle {
     width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
@@ -142,7 +142,7 @@
   }
   .nav-widget:hover .nav-body {
     opacity: 1; height: 100%; overflow-y: auto;
-    transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1), overflow 0s linear 0.32s;
+    transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1), overflow 0s linear 0.36s;
   }
   .nav-body::-webkit-scrollbar { width: 6px; }
   .nav-body::-webkit-scrollbar-track { background: transparent; }
@@ -586,11 +586,18 @@
 
     // Measure natural content height so the widget can smoothly animate to a fixed
     // target instead of animating to/from `auto`, which browsers can't tween.
-    // The toggle icon collapses to 0 height on hover, so the body gets the full box —
-    // add a small buffer so short lists don't trigger a needless scrollbar.
+    // Cap it here (not just in CSS) so long board lists reliably scroll instead of
+    // growing the box indefinitely.
     var navWidget = document.getElementById('navWidget');
+    var MAX_EXPANDED_HEIGHT = 340;
+    // Temporarily force layout so scrollHeight reflects the true content height
+    // even while the widget itself is still collapsed/hidden via CSS.
+    var prevOverflow = navBody.style.overflowY;
+    navBody.style.overflowY = 'visible';
     var contentHeight = navBody.scrollHeight;
-    navWidget.style.setProperty('--nav-expanded-height', (contentHeight + 12) + 'px');
+    navBody.style.overflowY = prevOverflow;
+    var target = Math.min(MAX_EXPANDED_HEIGHT, contentHeight + 12);
+    navWidget.style.setProperty('--nav-expanded-height', target + 'px');
   }
 
   // ---------- Main render ----------
