@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranker</title>
+</head>
+<body>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans, system-ui); background: var(--surface-0, #fff); color: var(--text-primary, #111); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary, #666); font-size: 14px; margin: 0 0 20px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+  select, input, button, textarea { font-family: inherit; font-size: 14px; }
+  select, input[type=text], input[type=number] {
+    height: 36px; padding: 0 10px; border-radius: 8px; border: 0.5px solid var(--border, #ccc);
+    background: var(--surface-2, #fff); color: var(--text-primary, #111);
+  }
+  button {
+    height: 36px; padding: 0 14px; border-radius: 8px; border: 0.5px solid var(--border-strong, #999);
+    background: transparent; color: var(--text-primary, #111); cursor: pointer;
+  }
+  button:hover { background: var(--surface-1, #f4f4f4); }
+  button:active { transform: scale(0.98); }
+  button.primary { background: #111; color: #fff; border-color: #111; }
+  button.primary:hover { background: #333; }
+  button.danger { color: #b3261e; border-color: #e0a5a0; }
+  button.small { height: 28px; padding: 0 10px; font-size: 12px; }
+  .card {
+    background: var(--surface-2, #fff); border: 0.5px solid var(--border, #ddd); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 16px;
+  }
+  .section-title { font-size: 16px; font-weight: 500; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 0.5px solid var(--border, #e5e5e5); }
+  th { color: var(--text-secondary, #666); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+    border-radius: 50%; background: var(--surface-1, #f0f0f0); font-weight: 500; font-size: 13px; margin-right: 6px;
+  }
+  .rank-badge.gold { background: #f5d98a; color: #6b4e00; }
+  .rank-badge.silver { background: #dcdcdc; color: #4a4a4a; }
+  .rank-badge.bronze { background: #e8b98a; color: #6b3d00; }
+  .score { font-weight: 500; font-size: 15px; }
+  .cat-row { display: grid; grid-template-columns: 1fr 140px 90px 60px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .cat-row label { font-size: 13px; color: var(--text-secondary, #666); display: flex; align-items: center; gap: 6px; }
+  .empty { color: var(--text-muted, #999); font-size: 14px; padding: 20px 0; text-align: center; }
+  .row-actions { display: flex; gap: 6px; }
+  .modal-bg {
+    position: static; margin-top: 12px; padding: 16px; border-radius: 12px;
+    background: var(--surface-1, #f6f6f6); border: 0.5px solid var(--border, #ddd);
+  }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--text-secondary, #666); margin-bottom: 4px; }
+  .field input { width: 100%; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--surface-1, #eee); color: var(--text-secondary, #666); margin-left: 6px; }
+  .hint { font-size: 12px; color: var(--text-muted, #999); margin-top: 6px; }
+  .board-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+</style>
+
+<div class="wrap">
+  <h1>Ranker</h1>
+  <p class="sub">Rank anything by any stats. Data saves automatically.</p>
+
+  <div class="toolbar">
+    <select id="boardSelect"></select>
+    <button id="newBoardBtn">+ New board</button>
+    <button id="renameBoardBtn">Rename</button>
+    <button id="deleteBoardBtn" class="danger">Delete board</button>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<script>
+(function() {
+  var state = { boards: {}, activeBoardId: null };
+  var loaded = false;
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function defaultBoard(name) {
+    return { id: uid(), name: name, categories: [], subjects: [] };
+  }
+
+  async function loadState() {
+    try {
+      var raw = localStorage.getItem('ranker-state');
+      if (raw) {
+        state = JSON.parse(raw);
+      }
+    } catch (e) {
+      // no existing data
+    }
+    if (!state.boards || Object.keys(state.boards).length === 0) {
+      var b = defaultBoard('My board');
+      state.boards = {};
+      state.boards[b.id] = b;
+      state.activeBoardId = b.id;
+    }
+    if (!state.activeBoardId || !state.boards[state.activeBoardId]) {
+      state.activeBoardId = Object.keys(state.boards)[0];
+    }
+    loaded = true;
+  }
+
+  async function saveState() {
+    try {
+      localStorage.setItem('ranker-state', JSON.stringify(state));
+    } catch (e) {
+      console.error('Save failed', e);
+    }
+  }
+
+  function activeBoard() {
+    return state.boards[state.activeBoardId];
+  }
+
+  function computeRankings(board) {
+    var subjects = board.subjects;
+    var categories = board.categories;
+    var totals = {};
+    subjects.forEach(function(s) { totals[s.id] = 0; });
+    var perCategoryPoints = {};
+
+    categories.forEach(function(cat) {
+      var entries = subjects.map(function(s) {
+        var val = (s.stats && s.stats[cat.id] !== undefined && s.stats[cat.id] !== '') ? Number(s.stats[cat.id]) : null;
+        return { id: s.id, val: val };
+      }).filter(function(e) { return e.val !== null && !isNaN(e.val); });
+
+      entries.sort(function(a, b) {
+        return cat.higherIsBetter ? (b.val - a.val) : (a.val - b.val);
+      });
+
+      var n = entries.length;
+      var points = {};
+      var i = 0;
+      while (i < n) {
+        var j = i;
+        while (j + 1 < n && entries[j + 1].val === entries[i].val) j++;
+        // rank position i (0-indexed) => points = n - (i+1), same for all tied in [i, j]
+        var pts = n - (i + 1);
+        for (var k = i; k <= j; k++) {
+          points[entries[k].id] = pts;
+        }
+        i = j + 1;
+      }
+
+      entries.forEach(function(e) {
+        totals[e.id] = (totals[e.id] || 0) + points[e.id];
+      });
+      perCategoryPoints[cat.id] = points;
+    });
+
+    var ranked = subjects.map(function(s) {
+      return { subject: s, total: totals[s.id] || 0 };
+    });
+    ranked.sort(function(a, b) { return b.total - a.total; });
+    return { ranked: ranked, perCategoryPoints: perCategoryPoints };
+  }
+
+  function el(tag, attrs, children) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function(k) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'html') e.innerHTML = attrs[k];
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function(c) { if (c) e.appendChild(c); });
+    return e;
+  }
+
+  function text(str) { return document.createTextNode(str); }
+
+  var addCatOpen = false;
+  var addSubjOpen = false;
+  var editingSubjId = null;
+
+  function render() {
+    var app = document.getElementById('app');
+    app.innerHTML = '';
+    var board = activeBoard();
+    if (!board) return;
+
+    renderBoardSelect();
+
+    // Categories card
+    var catCard = el('div', { class: 'card' });
+    var catHeader = el('div', { class: 'board-header' }, [
+      el('div', { class: 'section-title' }, [text('Categories')]),
+      el('button', { class: 'small', onclick: function() { addCatOpen = !addCatOpen; render(); } }, [text(addCatOpen ? 'Cancel' : '+ Add category')])
+    ]);
+    catCard.appendChild(catHeader);
+
+    if (board.categories.length === 0 && !addCatOpen) {
+      catCard.appendChild(el('div', { class: 'empty' }, [text('No categories yet. Add one to start scoring.')]));
+    } else {
+      board.categories.forEach(function(cat) {
+        var row = el('div', { class: 'cat-row' });
+        row.appendChild(el('div', {}, [text(cat.name)]));
+        var dirLabel = el('label', {}, [text(cat.higherIsBetter ? 'Higher = better' : 'Lower = better')]);
+        var toggleBtn = el('button', { class: 'small', onclick: function() {
+          cat.higherIsBetter = !cat.higherIsBetter;
+          saveState(); render();
+        }}, [text('Flip')]);
+        var dirWrap = el('div', { style: 'display:flex;align-items:center;gap:6px;' }, [dirLabel, toggleBtn]);
+        row.appendChild(dirWrap);
+        row.appendChild(el('div', {}));
+        var delBtn = el('button', { class: 'small danger', onclick: function() {
+          board.categories = board.categories.filter(function(c) { return c.id !== cat.id; });
+          board.subjects.forEach(function(s) { if (s.stats) delete s.stats[cat.id]; });
+          saveState(); render();
+        }}, [text('Remove')]);
+        row.appendChild(delBtn);
+        catCard.appendChild(row);
+      });
+    }
+
+    if (addCatOpen) {
+      var modal = el('div', { class: 'modal-bg' });
+      var nameField = el('div', { class: 'field' }, [
+        el('label', {}, [text('Category name')]),
+        el('input', { type: 'text', id: 'newCatName', placeholder: 'e.g. Goals, Price, Tastiness' })
+      ]);
+      var dirField = el('div', { class: 'field' }, [
+        el('label', {}, [text('Direction')]),
+        (function() {
+          var sel = el('select', { id: 'newCatDir' });
+          sel.appendChild(el('option', { value: 'higher' }, [text('Higher value is better')]));
+          sel.appendChild(el('option', { value: 'lower' }, [text('Lower value is better')]));
+          return sel;
+        })()
+      ]);
+      modal.appendChild(nameField);
+      modal.appendChild(dirField);
+      modal.appendChild(el('button', { class: 'primary', onclick: function() {
+        var nameInput = document.getElementById('newCatName');
+        var dirInput = document.getElementById('newCatDir');
+        var name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        board.categories.push({ id: uid(), name: name, higherIsBetter: dirInput.value === 'higher' });
+        addCatOpen = false;
+        saveState(); render();
+      }}, [text('Add category')]));
+      catCard.appendChild(modal);
+    }
+    app.appendChild(catCard);
+
+    // Subjects card
+    var subjCard = el('div', { class: 'card' });
+    var subjHeader = el('div', { class: 'board-header' }, [
+      el('div', { class: 'section-title' }, [text('Subjects')]),
+      el('button', { class: 'small', onclick: function() {
+        if (board.categories.length === 0) { alert('Add at least one category first.'); return; }
+        addSubjOpen = !addSubjOpen; editingSubjId = null; render();
+      }}, [text(addSubjOpen ? 'Cancel' : '+ Add subject')])
+    ]);
+    subjCard.appendChild(subjHeader);
+
+    if (board.subjects.length === 0 && !addSubjOpen) {
+      subjCard.appendChild(el('div', { class: 'empty' }, [text('No subjects yet.')]));
+    } else if (board.subjects.length > 0) {
+      var table = el('table');
+      var thead = el('thead');
+      var headRow = el('tr', {}, [el('th', {}, [text('Name')])]);
+      board.categories.forEach(function(cat) {
+        headRow.appendChild(el('th', {}, [text(cat.name)]));
+      });
+      headRow.appendChild(el('th', {}));
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+      var tbody = el('tbody');
+      board.subjects.forEach(function(s) {
+        var tr = el('tr');
+        tr.appendChild(el('td', {}, [text(s.name)]));
+        board.categories.forEach(function(cat) {
+          var v = (s.stats && s.stats[cat.id] !== undefined) ? s.stats[cat.id] : '';
+          tr.appendChild(el('td', {}, [text(v === '' ? '—' : v)]));
+        });
+        var actions = el('div', { class: 'row-actions' });
+        actions.appendChild(el('button', { class: 'small', onclick: function() {
+          editingSubjId = s.id; addSubjOpen = true; render();
+        }}, [text('Edit')]));
+        actions.appendChild(el('button', { class: 'small danger', onclick: function() {
+          board.subjects = board.subjects.filter(function(x) { return x.id !== s.id; });
+          saveState(); render();
+        }}, [text('Delete')]));
+        tr.appendChild(el('td', {}, [actions]));
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      subjCard.appendChild(table);
+    }
+
+    if (addSubjOpen) {
+      var editing = editingSubjId ? board.subjects.find(function(s) { return s.id === editingSubjId; }) : null;
+      var modal2 = el('div', { class: 'modal-bg' });
+      var nameField2 = el('div', { class: 'field' }, [
+        el('label', {}, [text('Subject name')]),
+        el('input', { type: 'text', id: 'newSubjName', value: editing ? editing.name : '', placeholder: 'e.g. Messi' })
+      ]);
+      modal2.appendChild(nameField2);
+      var statsWrap = el('div', { class: 'stat-inputs' });
+      board.categories.forEach(function(cat) {
+        var val = editing && editing.stats && editing.stats[cat.id] !== undefined ? editing.stats[cat.id] : '';
+        var f = el('div', { class: 'field' }, [
+          el('label', {}, [text(cat.name)]),
+          el('input', { type: 'number', step: 'any', id: 'stat_' + cat.id, value: val })
+        ]);
+        statsWrap.appendChild(f);
+      });
+      modal2.appendChild(statsWrap);
+      modal2.appendChild(el('button', { class: 'primary', onclick: function() {
+        var nameInput = document.getElementById('newSubjName');
+        var name = nameInput.value.trim();
+        if (!name) { nameInput.focus(); return; }
+        var stats = {};
+        board.categories.forEach(function(cat) {
+          var input = document.getElementById('stat_' + cat.id);
+          if (input.value !== '') stats[cat.id] = Number(input.value);
+        });
+        if (editing) {
+          editing.name = name;
+          editing.stats = stats;
+        } else {
+          board.subjects.push({ id: uid(), name: name, stats: stats });
+        }
+        addSubjOpen = false; editingSubjId = null;
+        saveState(); render();
+      }}, [text(editing ? 'Save changes' : 'Add subject')]));
+      subjCard.appendChild(modal2);
+    }
+    app.appendChild(subjCard);
+
+    // Rankings card
+    var rankCard = el('div', { class: 'card' });
+    rankCard.appendChild(el('div', { class: 'section-title' }, [text('Rankings')]));
+    if (board.subjects.length === 0 || board.categories.length === 0) {
+      rankCard.appendChild(el('div', { class: 'empty' }, [text('Add categories and subjects to see rankings.')]));
+    } else {
+      var result = computeRankings(board);
+      var rTable = el('table');
+      var rThead = el('thead', {}, [el('tr', {}, [
+        el('th', {}, [text('Rank')]),
+        el('th', {}, [text('Subject')]),
+        el('th', {}, [text('Total points')])
+      ])]);
+      rTable.appendChild(rThead);
+      var rBody = el('tbody');
+      var prevTotal = null, displayRank = 0, actualIndex = 0;
+      result.ranked.forEach(function(r) {
+        actualIndex++;
+        if (r.total !== prevTotal) { displayRank = actualIndex; prevTotal = r.total; }
+        var badgeClass = displayRank === 1 ? 'gold' : displayRank === 2 ? 'silver' : displayRank === 3 ? 'bronze' : '';
+        var tr = el('tr', {}, [
+          el('td', {}, [el('span', { class: 'rank-badge ' + badgeClass }, [text(String(displayRank))])]),
+          el('td', {}, [text(r.subject.name)]),
+          el('td', {}, [el('span', { class: 'score' }, [text(String(r.total))])])
+        ]);
+        rBody.appendChild(tr);
+      });
+      rTable.appendChild(rBody);
+      rankCard.appendChild(rTable);
+      rankCard.appendChild(el('div', { class: 'hint' }, [text('Points per category: 1st place gets (number of scored subjects − 1), down to 0 for last. Tied subjects share the same rank and points.')]));
+    }
+    app.appendChild(rankCard);
+  }
+
+  function renderBoardSelect() {
+    var sel = document.getElementById('boardSelect');
+    sel.innerHTML = '';
+    Object.keys(state.boards).forEach(function(id) {
+      var opt = el('option', { value: id }, [text(state.boards[id].name)]);
+      if (id === state.activeBoardId) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  document.getElementById('boardSelect').addEventListener('change', function(e) {
+    state.activeBoardId = e.target.value;
+    addCatOpen = false; addSubjOpen = false; editingSubjId = null;
+    saveState(); render();
+  });
+
+  document.getElementById('newBoardBtn').addEventListener('click', function() {
+    var name = prompt('Name your new board (e.g. "Soccer players", "Foods"):');
+    if (!name || !name.trim()) return;
+    var b = defaultBoard(name.trim());
+    state.boards[b.id] = b;
+    state.activeBoardId = b.id;
+    saveState(); render();
+  });
+
+  document.getElementById('renameBoardBtn').addEventListener('click', function() {
+    var board = activeBoard();
+    if (!board) return;
+    var name = prompt('Rename board:', board.name);
+    if (!name || !name.trim()) return;
+    board.name = name.trim();
+    saveState(); render();
+  });
+
+  document.getElementById('deleteBoardBtn').addEventListener('click', function() {
+    var board = activeBoard();
+    if (!board) return;
+    if (Object.keys(state.boards).length === 1) { alert('You need at least one board.'); return; }
+    if (!confirm('Delete "' + board.name + '" and all its data? This cannot be undone.')) return;
+    delete state.boards[board.id];
+    state.activeBoardId = Object.keys(state.boards)[0];
+    saveState(); render();
+  });
+
+  loadState().then(render);
+})();
+</script>
+
+</body>
+</html>
