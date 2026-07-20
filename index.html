@@ -581,27 +581,26 @@
     navBody.appendChild(el('div', { class: 'nav-divider' }));
     navBody.appendChild(el('div', { class: 'nav-section-label' }, [text('Boards')]));
 
-    Object.keys(state.boards).forEach(function(id) {
+    var boardIds = Object.keys(state.boards);
+    boardIds.forEach(function(id) {
       var b = state.boards[id];
       var isActive = page === 'board' && id === state.activeBoardId;
       navBody.appendChild(el('button', { class: 'nav-item' + (isActive ? ' active' : ''), onclick: function() { goTo('board', id); } }, [text(b.name)]));
     });
 
-    // Measure natural content height so the widget can smoothly animate to a fixed
-    // target instead of animating to/from `auto`, which browsers can't tween.
-    // Capped here (not just in CSS) so long board lists reliably scroll instead of
-    // growing the box indefinitely.
+    // The expanded height is derived purely from item COUNT, not a live pixel
+    // measurement of the rendered DOM. A pixel measurement shifts by a few px
+    // depending on which item is bold (.active), which differs on every click —
+    // that was retriggering the resize transition on every nav interaction, not
+    // just when boards were actually added or removed. Counting items instead
+    // keeps the target stable across clicks and only changes when the board
+    // list itself changes length.
+    var ITEM_HEIGHT = 34;      // ~row height incl. padding for a .nav-item button
+    var FIXED_CHROME = 3 * ITEM_HEIGHT + 28; // Home/Settings/New board rows + divider/label
     var navWidget = document.getElementById('navWidget');
     var MAX_EXPANDED_HEIGHT = 340;
-    var prevOverflow = navBody.style.overflowY;
-    navBody.style.overflowY = 'visible';
-    var contentHeight = navBody.scrollHeight;
-    navBody.style.overflowY = prevOverflow;
-    var target = Math.min(MAX_EXPANDED_HEIGHT, contentHeight + 12);
+    var target = Math.min(MAX_EXPANDED_HEIGHT, FIXED_CHROME + boardIds.length * ITEM_HEIGHT + 10);
     var newHeight = target + 'px';
-    // Only touch the CSS var if it actually changed — writing it unconditionally
-    // on every nav click (even to the same value) was retriggering the height
-    // transition mid-hover, which looked like the box "growing bit by bit".
     if (navWidget.style.getPropertyValue('--nav-expanded-height') !== newHeight) {
       navWidget.style.setProperty('--nav-expanded-height', newHeight);
     }
