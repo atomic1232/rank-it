@@ -121,7 +121,7 @@
     width: 44px; height: 44px;
     transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1), height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .nav-widget:hover {
+  .nav-widget.expanded {
     width: 210px;
     height: var(--nav-expanded-height, 200px);
   }
@@ -130,7 +130,7 @@
     flex-shrink: 0; cursor: pointer; overflow: hidden;
     transition: height 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
   }
-  .nav-widget:hover .nav-toggle { height: 0; opacity: 0; }
+  .nav-widget.expanded .nav-toggle { height: 0; opacity: 0; }
   .nav-toggle svg { width: 20px; height: 20px; stroke: var(--text-primary); flex-shrink: 0; }
   .nav-body {
     display: flex; flex-direction: column;
@@ -140,10 +140,13 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
-  .nav-widget:hover .nav-body {
-    opacity: 1; height: 100%; overflow-y: auto;
-    transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1), overflow 0s linear 0.36s;
+  .nav-widget.expanded .nav-body {
+    opacity: 1; height: 100%;
+    transition: opacity 0.18s ease 0.14s, height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  /* Scrolling is only enabled once the expand animation has fully settled (via JS-added class),
+     so no scrollbar can flash into view mid-transition. */
+  .nav-widget.settled .nav-body { overflow-y: auto; }
   .nav-body::-webkit-scrollbar { width: 6px; }
   .nav-body::-webkit-scrollbar-track { background: transparent; }
   .nav-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
@@ -586,18 +589,43 @@
 
     // Measure natural content height so the widget can smoothly animate to a fixed
     // target instead of animating to/from `auto`, which browsers can't tween.
-    // Cap it here (not just in CSS) so long board lists reliably scroll instead of
+    // Capped here (not just in CSS) so long board lists reliably scroll instead of
     // growing the box indefinitely.
     var navWidget = document.getElementById('navWidget');
     var MAX_EXPANDED_HEIGHT = 340;
-    // Temporarily force layout so scrollHeight reflects the true content height
-    // even while the widget itself is still collapsed/hidden via CSS.
     var prevOverflow = navBody.style.overflowY;
     navBody.style.overflowY = 'visible';
     var contentHeight = navBody.scrollHeight;
     navBody.style.overflowY = prevOverflow;
     var target = Math.min(MAX_EXPANDED_HEIGHT, contentHeight + 12);
-    navWidget.style.setProperty('--nav-expanded-height', target + 'px');
+    var newHeight = target + 'px';
+    // Only touch the CSS var if it actually changed — writing it unconditionally
+    // on every nav click (even to the same value) was retriggering the height
+    // transition mid-hover, which looked like the box "growing bit by bit".
+    if (navWidget.style.getPropertyValue('--nav-expanded-height') !== newHeight) {
+      navWidget.style.setProperty('--nav-expanded-height', newHeight);
+    }
+  }
+
+  // Hover/expand state is managed imperatively (rather than via CSS :hover) so we
+  // can reliably enable scrolling only after the resize animation has fully
+  // finished, with no race between separate transition-delay declarations.
+  var navSettleTimer = null;
+  function setupNavHover() {
+    var navWidget = document.getElementById('navWidget');
+    var TRANSITION_MS = 320;
+    navWidget.addEventListener('mouseenter', function() {
+      clearTimeout(navSettleTimer);
+      navWidget.classList.add('expanded');
+      navSettleTimer = setTimeout(function() {
+        navWidget.classList.add('settled');
+      }, TRANSITION_MS);
+    });
+    navWidget.addEventListener('mouseleave', function() {
+      clearTimeout(navSettleTimer);
+      navWidget.classList.remove('expanded');
+      navWidget.classList.remove('settled');
+    });
   }
 
   // ---------- Main render ----------
@@ -616,6 +644,7 @@
   loadState().then(function() {
     page = Object.keys(state.boards).length > 0 ? 'home' : 'home';
     render();
+    setupNavHover();
   });
 })();
 </script>
