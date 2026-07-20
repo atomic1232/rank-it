@@ -112,6 +112,27 @@
   .segmented button.active { background: var(--accent); color: var(--accent-text); }
   .segmented button + button { border-left: 0.5px solid var(--border-strong); }
 
+  /* Themed dialogs (replace browser alert/confirm/prompt) */
+  .dialog-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: dialog-fade-in 0.15s ease;
+  }
+  @keyframes dialog-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .dialog-box {
+    background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    padding: 20px 22px; max-width: 360px; width: 100%;
+    animation: dialog-pop-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+  @keyframes dialog-pop-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .dialog-title { font-size: 16px; font-weight: 500; margin: 0 0 8px; }
+  .dialog-message { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 16px; }
+  .dialog-box input[type=text] { width: 100%; margin-bottom: 16px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
   /* Nav widget */
   .nav-widget {
     position: fixed; bottom: 20px; left: 20px; z-index: 1000;
@@ -176,6 +197,8 @@
   </div>
   <div class="nav-body" id="navBody"></div>
 </div>
+
+<div id="dialogRoot"></div>
 
 <script>
 (function() {
@@ -274,6 +297,84 @@
     return e;
   }
   function text(str) { return document.createTextNode(str); }
+
+  // ---------- Themed dialogs (replace browser alert/confirm/prompt) ----------
+
+  function closeDialog() {
+    var root = document.getElementById('dialogRoot');
+    root.innerHTML = '';
+  }
+
+  function openDialog(contentEl) {
+    var root = document.getElementById('dialogRoot');
+    root.innerHTML = '';
+    var overlay = el('div', { class: 'dialog-overlay', onclick: function(e) {
+      if (e.target === overlay) closeDialog();
+    }});
+    var box = el('div', { class: 'dialog-box' }, [contentEl]);
+    overlay.appendChild(box);
+    root.appendChild(overlay);
+    return box;
+  }
+
+  function showAlert(message, title) {
+    var box = openDialog(el('div', {}, [
+      el('div', { class: 'dialog-title' }, [text(title || 'Heads up')]),
+      el('div', { class: 'dialog-message' }, [text(message)]),
+      el('div', { class: 'dialog-actions' }, [
+        el('button', { class: 'primary', onclick: closeDialog }, [text('OK')])
+      ])
+    ]));
+    var okBtn = box.querySelector('button.primary');
+    if (okBtn) okBtn.focus();
+  }
+
+  function showConfirm(message, onConfirm, opts) {
+    opts = opts || {};
+    var box = openDialog(el('div', {}, [
+      el('div', { class: 'dialog-title' }, [text(opts.title || 'Please confirm')]),
+      el('div', { class: 'dialog-message' }, [text(message)]),
+      el('div', { class: 'dialog-actions' }, [
+        el('button', { onclick: closeDialog }, [text(opts.cancelLabel || 'Cancel')]),
+        el('button', { class: opts.danger ? 'primary danger' : 'primary', onclick: function() {
+          closeDialog();
+          onConfirm();
+        }}, [text(opts.confirmLabel || 'Confirm')])
+      ])
+    ]));
+  }
+
+  function showPrompt(message, defaultValue, onSubmit, opts) {
+    opts = opts || {};
+    var input = el('input', { type: 'text', value: defaultValue || '' });
+    var box = openDialog(el('div', {}, [
+      el('div', { class: 'dialog-title' }, [text(opts.title || 'Enter a value')]),
+      el('div', { class: 'dialog-message' }, [text(message)]),
+      input,
+      el('div', { class: 'dialog-actions' }, [
+        el('button', { onclick: closeDialog }, [text('Cancel')]),
+        el('button', { class: 'primary', onclick: function() {
+          var val = input.value.trim();
+          if (!val) { input.focus(); return; }
+          closeDialog();
+          onSubmit(val);
+        }}, [text(opts.confirmLabel || 'Save')])
+      ])
+    ]));
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        var val = input.value.trim();
+        if (!val) return;
+        closeDialog();
+        onSubmit(val);
+      } else if (e.key === 'Escape') {
+        closeDialog();
+      }
+    });
+  }
+
   function goTo(p, boardId) {
     page = p;
     if (boardId) state.activeBoardId = boardId;
@@ -394,17 +495,18 @@
       el('h2', {}, [text(board.name)]),
       el('div', { style: 'display:flex; gap:8px;' }, [
         el('button', { class: 'small', onclick: function() {
-          var name = prompt('Rename board:', board.name);
-          if (!name || !name.trim()) return;
-          board.name = name.trim();
-          saveState(); render();
+          showPrompt('Rename board:', board.name, function(name) {
+            board.name = name;
+            saveState(); render();
+          }, { title: 'Rename board', confirmLabel: 'Rename' });
         }}, [text('Rename')]),
         el('button', { class: 'small danger', onclick: function() {
-          if (Object.keys(state.boards).length === 1) { alert('You need at least one board.'); return; }
-          if (!confirm('Delete "' + board.name + '" and all its data? This cannot be undone.')) return;
-          delete state.boards[board.id];
-          state.activeBoardId = Object.keys(state.boards)[0];
-          goTo('home');
+          showConfirm('Delete "' + board.name + '" and all its data? This cannot be undone.', function() {
+            delete state.boards[board.id];
+            var remaining = Object.keys(state.boards);
+            state.activeBoardId = remaining.length ? remaining[0] : null;
+            goTo('home');
+          }, { title: 'Delete board', confirmLabel: 'Delete', danger: true });
         }}, [text('Delete board')])
       ])
     ]);
@@ -471,7 +573,7 @@
     subjCard.appendChild(el('div', { class: 'board-header' }, [
       el('div', { class: 'section-title' }, [text('Subjects')]),
       el('button', { class: 'small', onclick: function() {
-        if (board.categories.length === 0) { alert('Add at least one category first.'); return; }
+        if (board.categories.length === 0) { showAlert('Add at least one category first.'); return; }
         addSubjOpen = !addSubjOpen; editingSubjId = null; render();
       }}, [text(addSubjOpen ? 'Cancel' : '+ Add subject')])
     ]));
@@ -578,15 +680,16 @@
     navBody.appendChild(el('button', { class: 'nav-item' + (page === 'settings' ? ' active' : ''), onclick: function() { goTo('settings'); } }, [text('⚙️ Settings')]));
     navBody.appendChild(el('button', { class: 'nav-item' + (page === 'newBoard' ? ' active' : ''), onclick: function() { goTo('newBoard'); } }, [text('＋ New board')]));
 
-    navBody.appendChild(el('div', { class: 'nav-divider' }));
-    navBody.appendChild(el('div', { class: 'nav-section-label' }, [text('Boards')]));
-
     var boardIds = Object.keys(state.boards);
-    boardIds.forEach(function(id) {
-      var b = state.boards[id];
-      var isActive = page === 'board' && id === state.activeBoardId;
-      navBody.appendChild(el('button', { class: 'nav-item' + (isActive ? ' active' : ''), onclick: function() { goTo('board', id); } }, [text(b.name)]));
-    });
+    if (boardIds.length > 0) {
+      navBody.appendChild(el('div', { class: 'nav-divider' }));
+      navBody.appendChild(el('div', { class: 'nav-section-label' }, [text('Boards')]));
+      boardIds.forEach(function(id) {
+        var b = state.boards[id];
+        var isActive = page === 'board' && id === state.activeBoardId;
+        navBody.appendChild(el('button', { class: 'nav-item' + (isActive ? ' active' : ''), onclick: function() { goTo('board', id); } }, [text(b.name)]));
+      });
+    }
 
     // The expanded height is derived purely from item COUNT, not a live pixel
     // measurement of the rendered DOM. A pixel measurement shifts by a few px
@@ -596,10 +699,12 @@
     // keeps the target stable across clicks and only changes when the board
     // list itself changes length.
     var ITEM_HEIGHT = 34;      // ~row height incl. padding for a .nav-item button
-    var FIXED_CHROME = 3 * ITEM_HEIGHT + 28; // Home/Settings/New board rows + divider/label
+    var FIXED_CHROME = 3 * ITEM_HEIGHT;               // Home/Settings/New board rows
+    var BOARDS_SECTION_CHROME = 28;                    // divider + section label, only if boards exist
     var navWidget = document.getElementById('navWidget');
     var MAX_EXPANDED_HEIGHT = 340;
-    var target = Math.min(MAX_EXPANDED_HEIGHT, FIXED_CHROME + boardIds.length * ITEM_HEIGHT + 10);
+    var boardsChrome = boardIds.length > 0 ? BOARDS_SECTION_CHROME : 0;
+    var target = Math.min(MAX_EXPANDED_HEIGHT, FIXED_CHROME + boardsChrome + boardIds.length * ITEM_HEIGHT + 10);
     var newHeight = target + 'px';
     if (navWidget.style.getPropertyValue('--nav-expanded-height') !== newHeight) {
       navWidget.style.setProperty('--nav-expanded-height', newHeight);
